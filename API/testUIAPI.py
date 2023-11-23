@@ -43,13 +43,12 @@ with st.sidebar:
         "2\) Condition",
         ["Wind/Cold", "Rain/Snow", "Sun/Hot"]
     )
-    match usr_Conditions:
-        case "Wind/Cold":
-            Cond = 0
-        case "Rain/Snow":
-            Cond = 1
-        case "Sun/Hot":
-            Cond = 2
+    if usr_Conditions == "Wind/Cold":
+        Cond = 0
+    elif usr_Conditions == "Rain/Snow":
+        Cond = 1
+    else:
+        Cond = 2
 
 count = 0
 Clothing = [
