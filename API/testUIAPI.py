@@ -15,7 +15,7 @@ import os
 header = st.container()
 results = st.container()
 
-model_file = "/home/stuart/Documents/RunMLC/Data.npy"
+model_file = "./model/Data.npy"
 Data = np.load(model_file)
 
 with header:
