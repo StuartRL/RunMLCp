@@ -1,59 +1,83 @@
 """ Basic web page API UI for RunMLC testing
-CLI "streamlit run ./API/testUIAPI.py"
-ToDo:
-1) 
-2) 
-3) 
+Development CLI "streamlit run ./API/testUIAPI.py"
+# TODO Consider item 2) 'Condition Wind' against item 3) 'Wind mph' option
 """
 
 import streamlit as st
 import numpy as np
 from datetime import datetime
-import sys
 import os
 
 header = st.container()
 results = st.container()
 
-model_file = "./model/Data.npy"
+model_file = "/home/stuart/Documents/RunMLC/Data_int.npy"
+# model_file = "./model/Data.npy"  # Streamlit to Github path
 Data = np.load(model_file)
 
 with header:
     st.title("RUNNING CLOTHES SELECTOR")
     st.text(f"RunMLC - {datetime.now().strftime('%d/%m/%y %H:%M')}")
     st.markdown(
-        "Obj. Predict the appropriate outdoor running clothing.\\\nModel: " +
-        str(datetime.fromtimestamp(os.path.getmtime(model_file)).strftime("%d/%m/%y %H:%M"))
+        "Obj. Predict the appropriate outdoor running clothing.\\\nModel: "
+        + str(
+            datetime.fromtimestamp(os.path.getmtime(model_file)).strftime(
+                "%d/%m/%y %H:%M"
+            )
+        )
     )
 
 st.sidebar.markdown(
     """
-    **Rev:** 1.0 \n
+    **Rev:** 1.1 \n
     **Model:**
-    Array 18 x 41 x 3 x 13 x 6 = 172,692
+    Array 18 x 41 x 3 x 13 x 2 = 57,564
     """
 )
 
 with st.sidebar:
     st.header("Inputs")
+
     usr_Temperature = st.slider(
-        "1\) Temperature", min_value=-10, max_value=30, value=10, step=1
+        "1\) Temperature (C)", min_value=-10, max_value=30, value=10, step=1
     )
-    usr_Conditions = st.radio(
-        "2\) Condition",
-        ["Wind/Cold", "Rain/Snow", "Sun/Hot"]
-    )
-    if usr_Conditions == "Wind/Cold":
+
+    usr_Conditions = st.radio("2\) Condition", ["Wind", "Rain/Fog/Snow", "Sun"])
+    if usr_Conditions == "Wind":
         Cond = 0
-    elif usr_Conditions == "Rain/Snow":
+    elif usr_Conditions == "Rain/Fog/Snow":
         Cond = 1
     else:
         Cond = 2
 
+    usr_Windy = st.slider("3\) Wind (mph)", min_value=0, max_value=10, value=8, step=1)
+    if usr_Windy < 1:
+        WindBF = 0
+    elif 1 <= usr_Windy <=3:
+        WindBF = 1
+    elif 4<= usr_Windy <=7 :
+        WindBF = 2
+    elif 8<= usr_Windy <=12 :
+        WindBF = 3
+    else:
+        WindBF = 12  # error
+    # st.write("DEBUG> WindBF=", WindBF, "Feels=", round(usr_Temperature-(usr_Windy*0.7)))  # debug
+    # st.write("Beaufort Scale:\\\n0=Calm\\\n1=Light Air (1 to 3mph)\\\n2=Light Breeze (4 to 7mph)\\\n3=Gentle Breeze (8 to 12mph)\\\n4=Moderate Breeze (13 to 18mph)...")
+
+    usr_DayTime = st.radio("4\) Day light", ["Yes", "No"])
+    if usr_DayTime == "Yes":
+        DayNight = 1
+    else:
+        DayNight = 0
+    # st.write("DEBUG> DayNight=", DayNight)  # debug
+
 count = 0
+
 Clothing = [
+    "Peaked Hat",
     "Light Hat",
     "Thick Hat",
+    "Thin Gloves",
     "Light Gloves",
     "Gloves",
     "Running Vest",
@@ -70,7 +94,12 @@ Clothing = [
     "Short Socks",
     "Long Socks",
     "Sun Cream",
+    "Sun Glasses",
+    "Florescent",
+    "Light",
+    "Water",
 ]
+
 Temperature = {
     -10: 0,
     -9: 1,
@@ -114,21 +143,50 @@ Temperature = {
     29: 39,
     30: 40,
 }
+
 Conditions = {
-    0: "Wind/Cold",
-    1: "Rain/Snow",
-    2: "Sun/Hot",
+    0: "Wind",
+    1: "Rain/Fog/Snow",
+    2: "Sun",
 }
 
+WindBF_index = {
+    0: "Calm",
+    1: "Light Air (1 to 3mph)",
+    2: "Light Breeze (4 to 7mph)",
+    3: "Gentle Breeze (8 to 12mph)",
+    4: "Moderate Breeze (13 to 18mph)",
+    5: "Fresh Breeze (19 to 24mph)",
+    6: "Strong Breeze (25 to 31mph)",
+    7: "Near Gale (32 to 38mph)",
+    8: "Gale (39 to 46mph)",
+    9: "Strong Gale (47 to 54mph)",
+    10: "Whole Gale (55 to 63mph)",
+    11: "Storm Force (64 to 75mph)",
+    12: "Hurricane Force (over 75mph)",
+}  # BF# to description
+
+Day = {
+    0: "Night time",
+    1: "Day time",
+}
+
+# --------------
 with results:
-    st.write(f"For {usr_Temperature} DEGREES in {Conditions[Cond].upper()} conditions:")
-    for i in range(18):
-        if Data[i, Temperature[usr_Temperature], Cond, 0, 0]:
+    st.write(
+        f"{Day[DayNight].upper()} in {usr_Temperature}C DEGREES, {Conditions[Cond].upper()}, {WindBF_index[WindBF].upper()} conditions, requires:"
+    )
+    for i in range(24):
+        if Data[i, Temperature[usr_Temperature], Cond, WindBF, DayNight] == 1.0:
             count += 1
-            st.text(f"{count}) {Clothing[i]}")
+            st.write(f"{count}. {Clothing[i].upper()}")
+        elif Data[i, Temperature[usr_Temperature], Cond, WindBF, DayNight] > 0:
+            count += 1
+            st.write(f"{count}. {Clothing[i].lower()} - _option or replacement item_")            
 
 st.markdown(
-    """Notes
-* windchill, watch, water, tracker, glasses... shoes! :smile:
+    """_Notes:_
+* _Windchill; ID, Watch, Water/Food, Tracker, Glasses... Shoes._ :smile:
+* _This information does not constitute legal advice. Lookout the window!_
 """
 )
