@@ -11,8 +11,8 @@ import os
 header = st.container()
 results = st.container()
 
-model_file = "/home/stuart/Documents/RunMLC/Data_int.npy"
-# model_file = "./model/Data.npy"  # Streamlit to Github path
+# model_file = "/home/stuart/Documents/RunMLC/Data_int.npy"
+model_file = "./model/Data.npy"  # Streamlit to Github path
 Data = np.load(model_file)
 
 with header:
